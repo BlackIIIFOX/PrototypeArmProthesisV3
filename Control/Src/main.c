@@ -26,16 +26,32 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h> 
+#include "data_handler.h"
+#include "gesture_model.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
+typedef struct{
+  unsigned long time_delay_actions;
+  uint32_t indexAction;
+  uint32_t currentRepeat;
+  GestureModel* current_command;
+} StructInfoCurrentCommand;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+// System commands
+#define CommandExex 0x17
+#define CommandExexRaw 0x18
 
 /* USER CODE END PD */
 
@@ -48,10 +64,24 @@
 
 /* USER CODE BEGIN PV */
 
+// For receive
+uint8_t dataRx;
+StructPackageBuffer receivePackage;
+StructPackageBuffer transmitPackage;
+
+// Current command
+StructInfoCurrentCommand currentCommand;
+
+// Time system
+uint32_t time_last_receive = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void RecognizePackage(StructPackage* package);                  // recognize and convert receive package
+void ClearCurrentCommand();                                     // Clear command if it is done
+void setCurrentCommand(GestureModel* new_current_command);     // Set new current command in system
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -59,6 +89,47 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void setCurrentCommand(GestureModel* new_current_command)
+{
+  currentCommand.current_command = new_current_command;
+  currentCommand.indexAction = 0;
+  currentCommand.time_delay_actions = 0;
+  currentCommand.currentRepeat = 0;
+}
+
+void clearInfoCurrentCommand()
+{
+  currentCommand.current_command = NULL;
+  currentCommand.indexAction = 0;
+  currentCommand.time_delay_actions = 0;
+  currentCommand.currentRepeat = 0;
+}
+
+void ClearCurrentCommand()
+{
+  if(currentCommand.current_command != NULL)
+  {
+    GestureModel_Destroy(currentCommand.current_command);
+    clearInfoCurrentCommand();
+  }
+}
+
+void RecognizePackage(StructPackage* recPackage)
+{
+  switch ( recPackage->package[0] ) 
+  {
+    case CommandExex:
+    {
+      ClearCurrentCommand();
+      break;
+    }
+    
+    case CommandExexRaw:
+      {
+        break;
+      }
+  }
+}
 /* USER CODE END 0 */
 
 /**
@@ -93,13 +164,64 @@ int main(void)
   MX_CAN_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  Create_Data_Receive();
+  CreatePackageBuffer(&receivePackage);
+  CreatePackageBuffer(&transmitPackage);
+  SetPackageBuf(&receivePackage);
+  clearInfoCurrentCommand();
+  
+  HAL_UART_Receive_IT(&huart1, &dataRx, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    if(PackageBufferCount(&receivePackage) > 0)
+    {
+      StructPackage* currentPackage = PackageBufGet(&receivePackage);
+      RecognizePackage(currentPackage);
+    }
+    
+    if(currentCommand.current_command != NULL)
+    {
+      unsigned long millis = HAL_GetTick();
+      
+      if(currentCommand.time_delay_actions<=millis)
+        {
+          MotionModel* action = (MotionModel*)(list_get(currentCommand.current_command->ListMotions, currentCommand.indexAction));
+            //(MotionModel*)currentCommand.current_command->ListMotions[currentCommand.indexAction];
+          // set new action in timers
+          // set finger
+         
+          
+          // check end command
+          currentCommand.time_delay_actions = action->DelMotion + millis;
+          currentCommand.indexAction++;
+          
+          if(currentCommand.current_command->InfoGesture.NumberOfMotions == currentCommand.indexAction)
+          {
+            if(currentCommand.current_command->InfoGesture.IterableGesture == true)
+            {
+              currentCommand.indexAction = 0;
+            }
+            else
+            {
+              if(currentCommand.current_command->InfoGesture.NumberOfGestureRepetitions - 1 > currentCommand.currentRepeat)
+              {
+                currentCommand.indexAction = 0;
+                currentCommand.currentRepeat++;
+              }
+              else 
+              {
+                ClearCurrentCommand();
+              }
+            } 
+          }
+        }
+      
+    }
+    
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -145,7 +267,21 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart == &huart1)
+  {
+    uint32_t time = HAL_GetTick();
+    if((time - time_last_receive) > 1000)
+    {
+      Clear_Data_Receive();
+    }
+    
+    Append_Data_Receive(dataRx);
+    time_last_receive = time;
+    HAL_UART_Receive_IT(&huart1, &dataRx, 1);
+  }
+}
 /* USER CODE END 4 */
 
 /**
