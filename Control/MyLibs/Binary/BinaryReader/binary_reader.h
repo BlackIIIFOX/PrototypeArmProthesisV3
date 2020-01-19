@@ -47,7 +47,7 @@ uint8_t BinaryReader_ReadByte(BinaryReaderStruct* reader);
 * @param reader объект, хранящий поток для чтения.
 * @retval Массив байтов, в котором содержатся данные, считанные из базового потока.
 */
-uint8_t BinaryReader_ReadBytes(BinaryReaderStruct* reader, int count);
+uint8_t* BinaryReader_ReadBytes(BinaryReaderStruct* reader, int count);
 
 /**
 * @brief Считывает следующий знак из текущего потока и изменяет текущую позицию в потоке
@@ -71,7 +71,7 @@ char* BinaryReader_ReadString(BinaryReaderStruct* reader);
 * @param reader объект, хранящий поток для чтения.
 * @retval Целое число без знака длиной 2 байта, считанное из текущего потока.
 */
-char BinaryReader_ReadUInt16(BinaryReaderStruct* reader);
+uint16_t BinaryReader_ReadUInt16(BinaryReaderStruct* reader);
 
 /**
 * @brief Считывает целое число без знака длиной 4 байта в формате с прямым порядком байтов,
@@ -79,7 +79,7 @@ char BinaryReader_ReadUInt16(BinaryReaderStruct* reader);
 * @param reader объект, хранящий поток для чтения.
 * @retval Целое число без знака длиной 4 байта, считанное из текущего потока.
 */
-char BinaryReader_ReadUInt32(BinaryReaderStruct* reader);
+uint32_t BinaryReader_ReadUInt32(BinaryReaderStruct* reader);
 
 /**
 * @brief Считывает целое число со знаком длиной 2 байта в формате с прямым порядком байтов,
@@ -87,7 +87,7 @@ char BinaryReader_ReadUInt32(BinaryReaderStruct* reader);
 * @param reader объект, хранящий поток для чтения.
 * @retval Целое число со знаком длиной 2 байта, считанное из текущего потока.
 */
-char BinaryReader_BinaryReader_ReadInt16(BinaryReaderStruct* reader);
+int16_t BinaryReader_BinaryReader_ReadInt16(BinaryReaderStruct* reader);
 
 /**
 * @brief Считывает целое число со знаком длиной 4 байта из текущего потока и перемещает
@@ -95,7 +95,7 @@ char BinaryReader_BinaryReader_ReadInt16(BinaryReaderStruct* reader);
 * @param reader объект, хранящий поток для чтения.
 * @retval Целое число со знаком длиной 2 байта, считанное из текущего потока.
 */
-char BinaryReader_ReadInt32(BinaryReaderStruct* reader);
+int32_t BinaryReader_ReadInt32(BinaryReaderStruct* reader);
 
 /**
 * @brief Считывает число с плавающей запятой длиной 8 байт из текущего потока и перемещает
@@ -103,7 +103,7 @@ char BinaryReader_ReadInt32(BinaryReaderStruct* reader);
 * @param reader объект, хранящий поток для чтения.
 * @retval Число с плавающей запятой длиной 8 байт, считанное из текущего потока.
 */
-char BinaryReader_ReadDouble(BinaryReaderStruct* reader);
+double BinaryReader_ReadDouble(BinaryReaderStruct* reader);
 
 /**
 * @brief Считывает число с плавающей запятой длиной 4 байта из текущего потока и перемещает
@@ -111,6 +111,6 @@ char BinaryReader_ReadDouble(BinaryReaderStruct* reader);
 * @param reader объект, хранящий поток для чтения.
 * @retval Число с плавающей запятой длиной 4 байта, считанное из текущего потока.
 */
-char BinaryReader_ReadSingle(BinaryReaderStruct* reader);
+float BinaryReader_ReadSingle(BinaryReaderStruct* reader);
 
 #endif

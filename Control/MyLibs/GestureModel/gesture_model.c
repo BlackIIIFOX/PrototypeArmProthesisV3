@@ -49,6 +49,7 @@ GestureModel* GestureModel_DeserializeGesture(uint8_t* binaryData)
     motion->PointerFinger = BinaryReader_ReadByte(reader);
     motion->MiddleFinger = BinaryReader_ReadByte(reader);
     motion->RingFinder = BinaryReader_ReadByte(reader);
+    motion->LittleFinger = BinaryReader_ReadByte(reader);
     motion->ThumbFinger = BinaryReader_ReadByte(reader);
     motion->StatePosBrush = BinaryReader_ReadUInt16(reader);
     motion->DelMotion = BinaryReader_ReadUInt16(reader);

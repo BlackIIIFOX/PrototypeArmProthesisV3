@@ -79,9 +79,6 @@ uint32_t time_last_receive = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void RecognizePackage(StructPackage* package);                  // recognize and convert receive package
-void ClearCurrentCommand();                                     // Clear command if it is done
-void setCurrentCommand(GestureModel* new_current_command);     // Set new current command in system
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -121,6 +118,7 @@ void RecognizePackage(StructPackage* recPackage)
     case CommandExex:
     {
       ClearCurrentCommand();
+      GestureModel* gesture = GestureModel_DeserializeGesture(&(recPackage->package[1]));
       break;
     }
     
@@ -171,6 +169,19 @@ int main(void)
   clearInfoCurrentCommand();
   
   HAL_UART_Receive_IT(&huart1, &dataRx, 1);
+  
+  // TODO: убрать.
+//  StructPackage test;
+//  
+//  test.countData = 64;
+//  uint8_t array[64] = {0x17, 20, 121, 168, 146, 80, 155, 154, 73, 130, 116, 167,
+//  175, 107, 229, 121, 75, 8, 208, 154, 208, 190, 208, 183, 208, 176, 18, 131, 48,
+//  27, 31, 137, 215, 65, 1, 2, 3, 180, 0, 0, 180, 0, 0, 0, 244, 1, 2, 3, 4, 5, 1,
+//  0, 0, 50, 0, 180, 0, 0, 180, 0, 0, 0, 244, 1};
+//  
+//  test.package = array;
+//  RecognizePackage(&test);
+//  while(1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
