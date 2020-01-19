@@ -21,9 +21,10 @@ void list_destroy(list *list)
     
     if(list->freeFn) {
       list->freeFn(current->data);
+    } else {
+      free(current->data);
     }
     
-    free(current->data);
     free(current);
   }
 }
@@ -67,7 +68,7 @@ listNode* list_get(list *list, int index)
 {
   assert(list != NULL);
   
-  if(list->logicalLength - 1 <= index)
+  if(list->logicalLength - 1 >= index)
   {
     listNode *node = list->head;
     

@@ -64,6 +64,14 @@ typedef struct{
 
 /* USER CODE BEGIN PV */
 
+/* CAN BUS PV Variables */
+CAN_FilterTypeDef sFilterConfig;
+CAN_TxHeaderTypeDef TxHeader;
+CAN_RxHeaderTypeDef RxHeader;
+uint8_t TxData[8];
+uint8_t RxData[8];
+uint32_t TxMailbox;
+
 // For receive
 uint8_t dataRx;
 StructPackageBuffer receivePackage;
@@ -119,6 +127,7 @@ void RecognizePackage(StructPackage* recPackage)
     {
       ClearCurrentCommand();
       GestureModel* gesture = GestureModel_DeserializeGesture(&(recPackage->package[1]));
+      setCurrentCommand(gesture);
       break;
     }
     
@@ -127,6 +136,65 @@ void RecognizePackage(StructPackage* recPackage)
         break;
       }
   }
+}
+
+/**
+* @brief Выполняет необходимую программную иницилизацию CAN и 
+* переменных для работы с ней.
+* @retval None
+*/
+void CAN_Init()
+{
+  sFilterConfig.FilterBank = 0;
+  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  sFilterConfig.FilterIdHigh = 0X0000;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0x0000;
+  sFilterConfig.FilterMaskIdLow = 0x0000;
+  sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+  sFilterConfig.FilterActivation = ENABLE;
+  sFilterConfig.SlaveStartFilterBank = 14;
+  
+  if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  
+  if (HAL_CAN_Start(&hcan) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  
+  if (HAL_CAN_ActivateNotification (&hcan, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  
+  TxHeader.StdId = 0x3E9;
+  TxHeader.ExtId = 0x01;
+  TxHeader.RTR = CAN_RTR_DATA;
+  TxHeader.IDE = CAN_ID_STD;
+  TxHeader.TransmitGlobalTime = DISABLE;
+  TxHeader.DLC = 8;
+  TxData[0] = 0;
+  TxData[1] = 0;
+  TxData[2] = 0;
+  TxData[3] = 0;
+  TxData[4] = 0;
+  TxData[5] = 0;
+  TxData[6] = 0;
+  TxData[7] = 0;
+}
+
+void ExecMotion(MotionModel* motion)
+{
+  TxData[0] = motion->PointerFinger;
+  TxData[1] = motion->MiddleFinger;
+  TxData[2] = motion->RingFinder;
+  TxData[3] = motion->LittleFinger;
+  TxData[4] = motion->ThumbFinger;
+  HAL_StatusTypeDef status =  HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &TxMailbox);
 }
 /* USER CODE END 0 */
 
@@ -167,6 +235,7 @@ int main(void)
   CreatePackageBuffer(&transmitPackage);
   SetPackageBuf(&receivePackage);
   clearInfoCurrentCommand();
+  CAN_Init();
   
   HAL_UART_Receive_IT(&huart1, &dataRx, 1);
   
@@ -200,12 +269,12 @@ int main(void)
       
       if(currentCommand.time_delay_actions<=millis)
         {
-          MotionModel* action = (MotionModel*)(list_get(currentCommand.current_command->ListMotions, currentCommand.indexAction));
-            //(MotionModel*)currentCommand.current_command->ListMotions[currentCommand.indexAction];
+          MotionModel* action = (MotionModel*)(list_get(currentCommand.current_command->ListMotions, currentCommand.indexAction)->data);
+          //(MotionModel*)currentCommand.current_command->ListMotions[currentCommand.indexAction];
           // set new action in timers
           // set finger
-         
-          
+          ExecMotion(action);
+        
           // check end command
           currentCommand.time_delay_actions = action->DelMotion + millis;
           currentCommand.indexAction++;
